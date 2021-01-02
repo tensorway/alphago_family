@@ -1,10 +1,16 @@
 import numpy as np
 from alpha_zero.mcts import get_best_action, get_best_q, mcts, Node, get_ns
 
-def eval_winrate(totest, bench, env, model, n_games=100):
+def eval_winrate(totest, bench, env, model, n_games=100, toset_temp=0.1):
     wins = 0
     draws = 0
     rsum = 0
+    try:
+        tmp = totest.temperature
+        totest.temperature=toset_temp
+    except:
+        pass
+
     for igame in range(n_games):
         done, reward = False, 0
         obs = env.reset()
@@ -19,6 +25,13 @@ def eval_winrate(totest, bench, env, model, n_games=100):
         draws += 1 if r==0 else 0
     winrate = wins/n_games
     drawrate = draws/n_games
+
+    try:
+        totest.temperature=tmp
+    except:
+        pass
+
+
     return winrate, drawrate, (1-winrate-drawrate)
 
 
@@ -72,3 +85,43 @@ def save(model, name, major, minor):
 def load(model, name, major, minor):
     PATH = 'pretrained_models/' +name+'_'+str(major)+'_'+str(minor)+'.th'
     model.load_state_dict(torch.load(PATH))
+
+
+def play_model_against_human(env, model, policy, value_function, human='first'):
+    obs = env.reset()
+    env.render()
+    done = False
+    turn = 0
+    human = 0 if human=='first' else 1 
+    while not done:
+        print("-"*20)
+        env.render()
+        print("turn number", turn)
+        print("value of position = ", value_function.get(obs))
+        if human == turn%2:
+            besta = int(input("your play? "))
+            print("your action was", besta)
+            obs, r, done, _ = env.step(besta)
+        else:
+            besta = policy.act(obs, model.available_actions(obs))
+            obs, r, done, _ = env.step(besta)
+        turn += 1
+    print("-"*20)
+    env.render()    
+    print("final reward=", r)
+
+
+def play_model_against_itself(env, model, policy, value_function):
+    obs = env.reset()
+    env.render()
+    done = False
+    while not done:
+        print("-"*20)
+        env.render()
+        print("turn number", turn)
+        print("value of position = ", value_function.get(obs))
+        besta = policy.act(obs, model.available_actions(obs))
+        obs, r, done, _ = env.step(besta)
+    print("-"*20)
+    env.render()    
+    print("final reward=", r)

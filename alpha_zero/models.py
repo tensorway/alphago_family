@@ -106,9 +106,18 @@ class NNTreePolicy(nn.Module):
         weights = []
         for action in available_actions:
             weights.append(action_probs[action])
-        weights = np.array(weights)
+        weights = np.array(weights) + 1e-8
         weights /= weights.sum()
-        action = np.random.choice(available_actions, p=weights)
+        try:
+            action = np.random.choice(available_actions, p=weights)
+        except:
+            print(available_actions)
+            print(weights)
+            print(weights)
+            print(obs)
+            print(action_probs)
+            raise
+
         return action     
     def act_greedy(self, obs, available_actions):
         obs = self.obs2testorobs(obs)
